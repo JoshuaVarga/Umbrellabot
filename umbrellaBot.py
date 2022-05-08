@@ -1,44 +1,113 @@
-from email.mime import image
 import discord
+import json
+import os
 import random
 import requests
+import sys
 
 from bs4 import BeautifulSoup
 from datetime import timedelta
 
-client = discord.Client()
+if not os.path.exists('config.json'):
+    try:
+        with open('config.json', 'w+') as f:
+            json.dump({'token': 'null'}, f, indent=4, sort_keys=True)
+    except Exception as e:
+        print(e)
+
+with open('config.json', 'r+') as f:
+    configFile = json.load(f)
+
+if len(sys.argv) == 2:
+    token = sys.argv[1]
+    configFile['token'] = sys.argv[1]
+
+    with open('config.json', 'r+') as f:
+        json.dump(configFile, f, indent=4, sort_keys=True)
+else:
+    token = configFile['token']
+    if token == 'null':
+        print('Bot token not configured')
+        sys.exit()
+
+intents = discord.Intents.default()
+intents.members = True
+bot = discord.Bot('u!', intents=intents)
 
 
-@client.event
+@bot.event
 async def on_ready():
-    print('We have logged in as {0.user}'.format(client))
+    print('We have logged in as {0.user}'.format(bot))
 
 
-@client.event
+@bot.event
 async def on_message(message):
-    if message.author == client.user:
-        return
-
-    if message.content.startswith('u!help'):
-        await client.get_channel(972571373748752404).send('ToDo')
-
-    elif message.content.startswith('u!game'):
+    try:
         args = message.content.split(' ')
-        def rnd(): return random.randint(0, 255)
 
-        embed = discord.Embed(
-            type='rich',
-            title='Needs {} people to play!'.format(args[2]),
-            description='If you want to play react ✅ below!',
-            color=int('0x%02X%02X%02X' % (rnd(), rnd(), rnd()), 16),
-            timestamp=message.created_at + timedelta(minutes=int(args[3]))
-        )
+        if message.author == bot.user:
+            return
 
-        embed.set_author(name=message.author.display_name)
-        embed.set_footer(text="We're playing")
-        embed.set_image(url=getCoverArt(args[1]))
+        if message.content.startswith('u!help'):
+            await message.channel.send('ToDo')
 
-        await client.get_channel(972571373748752404).send(embed=embed)
+        elif message.content.startswith('u!about'):
+            await message.channel.send('https://github.com/JoshuaVarga/Umbrellabot')
+
+        elif message.content.startswith('u!set'):
+            if message.author.guild_permissions.administrator:
+                match args[1]:
+                    case 'outputChannelID':
+                        configFile['outputChannelID'] = args[2]
+                        with open('config.json', 'r+') as f:
+                            json.dump(configFile, f, indent=4, sort_keys=True)
+                    case 'pingRoleID':
+                        configFile['pingRoleID'] = args[2]
+                        with open('config.json', 'r+') as f:
+                            json.dump(configFile, f, indent=4, sort_keys=True)
+                    case 'guildID':
+                        configFile['guildID'] = args[2]
+                        with open('config.json', 'r+') as f:
+                            json.dump(configFile, f, indent=4, sort_keys=True)
+
+            else:
+                await message.channel.send('Insufficient privledges')
+
+        elif message.content.startswith('u!game'):
+
+            if int(args[2]) < 2 or int(args[2]) > float('inf'):
+                raise Exception('Invalid range')
+
+            def rnd(): return random.randint(0, 255)
+
+            embed = discord.Embed(
+                type='rich',
+                title='Needs {} people to play {}!'.format(args[2], args[1]),
+                description='If you want to play react with: ✅\nOtherwise react with: ❌',
+                color=int('0x%02X%02X%02X' % (rnd(), rnd(), rnd()), 16),
+                timestamp=message.created_at + timedelta(minutes=int(args[3]))
+            )
+
+            embed.set_author(name=message.author.display_name)
+            embed.set_footer(text="We're playing")
+            embed.set_image(url=getCoverArt(args[1]))
+            embed.set_thumbnail(url=message.author.avatar.url)
+
+            reply = await bot.get_channel(int(configFile['outputChannelID'])).send('<@&{}>'.format(configFile['pingRoleID']), embed=embed)
+            await reply.add_reaction('✅')
+            await reply.add_reaction('❌')
+
+            guild = bot.get_guild(int(configFile['guildID']))
+            role = guild.get_role(int(configFile['pingRoleID']))
+            jumpUrl = reply.to_reference().jump_url
+
+            for member in guild.members:
+                print('{}, {}'.format(member.name, member.roles))
+                if role in member.roles:
+                    await member.send('You have been invited to play a game!\nClick here ➡️ {}'.format(jumpUrl))
+        
+    except Exception as e:
+        await message.channel.send(e)
 
 
 def getCoverArt(query):
@@ -47,10 +116,6 @@ def getCoverArt(query):
     soup = BeautifulSoup(content, 'html.parser')
     images = soup.findAll('img')
 
-    covers = []
-    for image in images:
-        covers.append(image.get('src'))
+    return images[1].get('src')
 
-    return covers[1]
-
-client.run('OTcyNTUzMzk5NTIwMzMzOTM1.GsjnXk.LvTo-6I0j3xPoKY7CX7NwxQdWk3U86_kWXG33Y')
+bot.run(token)
