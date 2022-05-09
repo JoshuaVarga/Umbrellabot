@@ -3,6 +3,7 @@ from flask import Flask
 
 port = environ.get('PORT')
 
+print('Running on port --> ', port)
+
 app = Flask(__name__)
 app.run(port)
-print('Running on port --> ', port)
