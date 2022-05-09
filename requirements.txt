@@ -2,3 +2,4 @@ discord.py==1.7.3
 requests==2.27.1
 beautifulsoup4==4.11.1
 py-cord==2.0.0b1
+--upgrade --no-deps --force-reinstall git+https://github.com/Pycord-Development/pycord
