@@ -7,6 +7,10 @@ import sys
 
 from bs4 import BeautifulSoup
 from datetime import timedelta
+from flask import Flask
+
+app = Flask(__name__)
+app.run(os.environ.get('PORT'))
 
 if not os.path.exists('config.json'):
     try:

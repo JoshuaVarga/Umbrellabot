@@ -1,1 +1,1 @@
-worker: python umbrellaBot.py
+web: python umbrellaBot.py
