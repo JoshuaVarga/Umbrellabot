@@ -1,4 +1,4 @@
 discord.py==1.7.3
 requests==2.27.1
 beautifulsoup4==4.11.1
-git+https://github.com/Pycord-Development/pycord
+py-cord==2.0.0b1
