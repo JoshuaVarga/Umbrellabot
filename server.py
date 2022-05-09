@@ -1,5 +1,8 @@
+from multiprocessing import process
 from flask import Flask
-from os import environ
+
+port = process.env.PORT
 
 app = Flask(__name__)
-app.run(environ.get('PORT'))
+app.run(port)
+print('Running on port', port)
