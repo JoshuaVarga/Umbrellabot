@@ -7,10 +7,7 @@ import sys
 
 from bs4 import BeautifulSoup
 from datetime import timedelta
-from flask import Flask
 
-app = Flask(__name__)
-app.run(os.environ.get('PORT'))
 
 if not os.path.exists('config.json'):
     try:
@@ -109,7 +106,7 @@ async def on_message(message):
                 print('{}, {}'.format(member.name, member.roles))
                 if role in member.roles:
                     await member.send('You have been invited to play a game!\nClick here ➡️ {}'.format(jumpUrl))
-        
+
     except Exception as e:
         await message.channel.send(e)
 
@@ -121,5 +118,6 @@ def getCoverArt(query):
     images = soup.findAll('img')
 
     return images[1].get('src')
+
 
 bot.run(token)
