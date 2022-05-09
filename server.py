@@ -1,9 +1,8 @@
 from os import environ
 from flask import Flask
 
+address = environ.get('ADDRESS')
 port = environ.get('PORT')
 
-print('Running on port --> ', port)
-
 app = Flask(__name__)
-app.run(port)
+app.run(address=address, port=port)
