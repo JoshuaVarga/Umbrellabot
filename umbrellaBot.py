@@ -4,7 +4,6 @@ import os
 import random
 import requests
 import sys
-import time
 
 from bs4 import BeautifulSoup
 from datetime import timedelta
@@ -120,6 +119,3 @@ def getCoverArt(query):
     return images[1].get('src')
 
 bot.run(token)
-
-while True:
-	time.sleep(2)
