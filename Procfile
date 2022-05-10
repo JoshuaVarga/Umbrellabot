@@ -1,1 +1,1 @@
-worker: python umbrellaBot.py
+worker: python umbrellaBot.py $TOKEN
