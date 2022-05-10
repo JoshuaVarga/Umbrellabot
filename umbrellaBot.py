@@ -28,32 +28,32 @@ if len(sys.argv) == 2:
 else:
     token = configFile['token']
     if token == 'null':
-        print('Bot token not configured')
+        print('client token not configured')
         sys.exit()
 
 intents = discord.Intents.default()
 intents.members = True
-bot = discord.Bot('u!', intents=intents)
+client = discord.Client(intents=intents)
 
 
-@bot.event
+@client.event
 async def on_ready():
-    print('We have logged in as {0.user}'.format(bot))
+    print('We have logged in as {0.user}'.format(client))
 
 
-@bot.event
+@client.event
 async def on_message(message):
     try:
         args = message.content.split(' ')
 
-        if message.author == bot.user:
+        if message.author == client.user:
             return
 
         if message.content.startswith('u!help'):
             await message.channel.send('ToDo')
 
         elif message.content.startswith('u!about'):
-            await message.channel.send('https://github.com/JoshuaVarga/Umbrellabot')
+            await message.channel.send('https://github.com/JoshuaVarga/Umbrellaclient')
 
         elif message.content.startswith('u!set'):
             if message.author.guild_permissions.administrator:
@@ -92,19 +92,19 @@ async def on_message(message):
             embed.set_author(name=message.author.display_name)
             embed.set_footer(text="We're playing")
             embed.set_image(url=getCoverArt(args[1]))
-            embed.set_thumbnail(url=message.author.avatar.url)
+            embed.set_thumbnail(url=message.author.avatar_url)
 
-            reply = await bot.get_channel(int(configFile['outputChannelID'])).send('<@&{}>'.format(configFile['pingRoleID']), embed=embed)
+            reply = await client.get_channel(int(configFile['outputChannelID'])).send('<@&{}>'.format(configFile['pingRoleID']), embed=embed)
             await reply.add_reaction('✅')
             await reply.add_reaction('❌')
 
-            guild = bot.get_guild(int(configFile['guildID']))
+            guild = client.get_guild(int(configFile['guildID']))
             role = guild.get_role(int(configFile['pingRoleID']))
             jumpUrl = reply.to_reference().jump_url
 
             for member in guild.members:
-                print('{}, {}'.format(member.name, member.roles))
                 if role in member.roles:
+                    print('{}, {}'.format(member.name, member.roles))
                     await member.send('You have been invited to play a game!\nClick here ➡️ {}'.format(jumpUrl))
 
     except Exception as e:
@@ -120,4 +120,4 @@ def getCoverArt(query):
     return images[1].get('src')
 
 
-bot.run(token)
+client.run(token)
