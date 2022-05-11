@@ -8,17 +8,16 @@ from datetime import timedelta
 from os import environ
 from random import randint
 
-on_heroku = False
+debug = False
+if 'ON_HEROKU' in environ:
+    debug = True
 
 loop = asyncio.new_event_loop()
 client = discord.Client(intents=discord.Intents.all(), loop=loop)
 
 
 def main():
-    if 'ON_HEROKU' in environ:
-        on_heroku = True
-
-    else:
+    if not debug:
         open('.env', 'a+')
         dotenv.load_dotenv()
 
@@ -37,7 +36,7 @@ def run():
 def initToken():
     token = input('Enter Discord Bot Token:\n')
     
-    if on_heroku:
+    if debug:
         environ['DISCORD_BOT_TOKEN'] = token
     else:
         dotenv.set_key('.env', 'DISCORD_BOT_TOKEN', token, quote_mode='never')
@@ -75,17 +74,17 @@ async def on_message(message):
             if message.author.guild_permissions.administrator:
                 match args[1]:
                     case 'GUILD_ID':
-                        if not on_heroku:
+                        if not debug:
                             dotenv.set_key('.env', 'GUILD_ID', args[2], quote_mode='never')
                         else:
                             environ['GUILD_ID'] = args[2]
                     case 'OUTPUT_CHANNEL_ID':
-                        if not on_heroku:
+                        if not debug:
                             dotenv.set_key('.env', 'OUTPUT_CHANNEL_ID', args[2], quote_mode='never')
                         else:
                             environ['OUTPUT_CHANNEL_ID'] = args[2]
                     case 'PING_ROLE_ID':
-                        if not on_heroku:
+                        if not debug:
                             dotenv.set_key('.env', 'PING_ROLE_ID', args[2], quote_mode='never')
                         else:
                             environ['PING_ROLE_ID'] = args[2]
@@ -117,7 +116,7 @@ async def on_message(message):
 
             pingRoleID = ''
 
-            if on_heroku:
+            if debug:
                 pingRoleID = environ['PING_ROLE_ID']
 
             reply = await client.get_channel(int(environ['OUTPUT_CHANNEL_ID'])).send('<@&{}>'.format(pingRoleID), embed=embed)
@@ -129,7 +128,7 @@ async def on_message(message):
             jumpUrl = reply.to_reference().jump_url
 
             for member in guild.members:
-                if role in member.roles and on_heroku:
+                if role in member.roles and debug:
                     await member.send('You have been invited to play a game!\nClick here ➡️ {}'.format(jumpUrl))
 
     except Exception as e:
