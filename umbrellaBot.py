@@ -7,7 +7,10 @@ import sys
 
 from bs4 import BeautifulSoup
 from datetime import timedelta
+from os import environ
 
+on_heroku = False
+print(os.environ)
 
 if not os.path.exists('config.json'):
     try:
