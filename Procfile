@@ -1,1 +1,1 @@
-worker: python umbrellaBot.py $TOKEN
+worker: python umbrellaBot.py $DISCORD_BOT_TOKEN
