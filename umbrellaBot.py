@@ -28,7 +28,7 @@ if len(sys.argv) == 2:
 else:
     token = configFile['token']
     if token == 'null':
-        print('client token not configured')
+        print('Token not configured')
         sys.exit()
 
 intents = discord.Intents.default()
@@ -53,7 +53,7 @@ async def on_message(message):
             await message.channel.send('ToDo')
 
         elif message.content.startswith('u!about'):
-            await message.channel.send('https://github.com/JoshuaVarga/Umbrellaclient')
+            await message.channel.send('https://github.com/JoshuaVarga/Umbrellabot')
 
         elif message.content.startswith('u!set'):
             if message.author.guild_permissions.administrator:
