@@ -1,42 +1,55 @@
+import asyncio
 import discord
-import json
-import os
-import random
+import dotenv
 import requests
-import sys
 
 from bs4 import BeautifulSoup
 from datetime import timedelta
 from os import environ
+from random import randint
 
 on_heroku = False
-print(os.environ)
 
-if not os.path.exists('config.json'):
+loop = asyncio.new_event_loop()
+client = discord.Client(intents=discord.Intents.all(), loop=loop)
+
+
+def main():
+    if 'ON_HEROKU' in environ:
+        on_heroku = True
+
+    else:
+        open('.env', 'a+')
+        dotenv.load_dotenv()
+
+    run()
+
+
+def run():
+    print('Logging in...')
     try:
-        with open('config.json', 'w+') as f:
-            json.dump({'token': 'null'}, f, indent=4, sort_keys=True)
+        client.run(environ['DISCORD_BOT_TOKEN'], reconnect=True)
     except Exception as e:
         print(e)
+        initToken()
 
-with open('config.json', 'r+') as f:
-    configFile = json.load(f)
 
-if len(sys.argv) == 2:
-    token = sys.argv[1]
-    configFile['token'] = sys.argv[1]
+def initToken():
+    token = input('Enter Discord Bot Token:\n')
+    
+    if on_heroku:
+        environ['DISCORD_BOT_TOKEN'] = token
+    else:
+        dotenv.set_key('.env', 'DISCORD_BOT_TOKEN', token, quote_mode='never')
 
-    with open('config.json', 'r+') as f:
-        json.dump(configFile, f, indent=4, sort_keys=True)
-else:
-    token = configFile['token']
-    if token == 'null':
-        print('Token not configured')
-        sys.exit()
 
-intents = discord.Intents.default()
-intents.members = True
-client = discord.Client(intents=intents)
+def getCoverArt(query):
+    url = 'https://www.google.com/search?q={0}&tbm=isch'.format(query)
+    content = requests.get(url).content
+    soup = BeautifulSoup(content, 'html.parser')
+    images = soup.findAll('img')
+
+    return images[1].get('src')
 
 
 @client.event
@@ -61,18 +74,23 @@ async def on_message(message):
         elif message.content.startswith('u!set'):
             if message.author.guild_permissions.administrator:
                 match args[1]:
-                    case 'outputChannelID':
-                        configFile['outputChannelID'] = args[2]
-                        with open('config.json', 'r+') as f:
-                            json.dump(configFile, f, indent=4, sort_keys=True)
-                    case 'pingRoleID':
-                        configFile['pingRoleID'] = args[2]
-                        with open('config.json', 'r+') as f:
-                            json.dump(configFile, f, indent=4, sort_keys=True)
-                    case 'guildID':
-                        configFile['guildID'] = args[2]
-                        with open('config.json', 'r+') as f:
-                            json.dump(configFile, f, indent=4, sort_keys=True)
+                    case 'GUILD_ID':
+                        if not on_heroku:
+                            dotenv.set_key('.env', 'GUILD_ID', args[2], quote_mode='never')
+                        else:
+                            environ['GUILD_ID'] = args[2]
+                    case 'OUTPUT_CHANNEL_ID':
+                        if not on_heroku:
+                            dotenv.set_key('.env', 'OUTPUT_CHANNEL_ID', args[2], quote_mode='never')
+                        else:
+                            environ['OUTPUT_CHANNEL_ID'] = args[2]
+                    case 'PING_ROLE_ID':
+                        if not on_heroku:
+                            dotenv.set_key('.env', 'PING_ROLE_ID', args[2], quote_mode='never')
+                        else:
+                            environ['PING_ROLE_ID'] = args[2]
+
+                await message.channel.send('Successfully updated {} to {}!'.format(args[1], args[2]))
 
             else:
                 await message.channel.send('Insufficient privledges')
@@ -82,7 +100,7 @@ async def on_message(message):
             if int(args[2]) < 2 or int(args[2]) > float('inf'):
                 raise Exception('Invalid range')
 
-            def rnd(): return random.randint(0, 255)
+            def rnd(): return randint(0, 255)
 
             embed = discord.Embed(
                 type='rich',
@@ -97,30 +115,25 @@ async def on_message(message):
             embed.set_image(url=getCoverArt(args[1]))
             embed.set_thumbnail(url=message.author.avatar_url)
 
-            reply = await client.get_channel(int(configFile['outputChannelID'])).send('<@&{}>'.format(configFile['pingRoleID']), embed=embed)
+            pingRoleID = ''
+
+            if on_heroku:
+                pingRoleID = environ['PING_ROLE_ID']
+
+            reply = await client.get_channel(int(environ['OUTPUT_CHANNEL_ID'])).send('<@&{}>'.format(pingRoleID), embed=embed)
             await reply.add_reaction('✅')
             await reply.add_reaction('❌')
 
-            guild = client.get_guild(int(configFile['guildID']))
-            role = guild.get_role(int(configFile['pingRoleID']))
+            guild = client.get_guild(int(environ['GUILD_ID']))
+            role = guild.get_role(int(environ['PING_ROLE_ID']))
             jumpUrl = reply.to_reference().jump_url
 
             for member in guild.members:
-                if role in member.roles:
-                    print('{}, {}'.format(member.name, member.roles))
+                if role in member.roles and on_heroku:
                     await member.send('You have been invited to play a game!\nClick here ➡️ {}'.format(jumpUrl))
 
     except Exception as e:
         await message.channel.send(e)
 
-
-def getCoverArt(query):
-    url = 'https://www.google.com/search?q={0}&tbm=isch'.format(query)
-    content = requests.get(url).content
-    soup = BeautifulSoup(content, 'html.parser')
-    images = soup.findAll('img')
-
-    return images[1].get('src')
-
-
-client.run(token)
+if __name__ == '__main__':
+    main()
