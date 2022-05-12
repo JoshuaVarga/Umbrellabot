@@ -9,7 +9,7 @@ from os import environ
 from random import randint
 
 debug = False
-if 'ON_HEROKU' in environ:
+if 'ON_HEROKU' not in environ:
     debug = True
 
 loop = asyncio.new_event_loop()
@@ -17,29 +17,22 @@ client = discord.Client(intents=discord.Intents.all(), loop=loop)
 
 
 def main():
-    if not debug:
+    if debug:
         open('.env', 'a+')
         dotenv.load_dotenv()
 
-    run()
-
-
-def run():
     print('Logging in...')
     try:
         client.run(environ['DISCORD_BOT_TOKEN'], reconnect=True)
     except Exception as e:
         print(e)
-        initToken()
 
+        token = input('Enter Discord Bot Token:\n')
 
-def initToken():
-    token = input('Enter Discord Bot Token:\n')
-
-    if debug:
-        environ['DISCORD_BOT_TOKEN'] = token
-    else:
-        dotenv.set_key('.env', 'DISCORD_BOT_TOKEN', token, quote_mode='never')
+        if debug:
+            environ['DISCORD_BOT_TOKEN'] = token
+        else:
+            dotenv.set_key('.env', 'DISCORD_BOT_TOKEN', token, quote_mode='never')
 
 
 def getCoverArt(query):
@@ -138,7 +131,7 @@ async def on_message(message):
                                 .send(
                                     '<@&{}>'.format(environ['PING_ROLE_ID']),
                                     embed=embed
-                                )
+            )
 
             await reply.add_reaction('✅')
             await reply.add_reaction('❌')
