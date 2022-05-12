@@ -35,7 +35,7 @@ def run():
 
 def initToken():
     token = input('Enter Discord Bot Token:\n')
-    
+
     if debug:
         environ['DISCORD_BOT_TOKEN'] = token
     else:
@@ -68,28 +68,38 @@ async def on_message(message):
             await message.channel.send('ToDo')
 
         elif message.content.startswith('u!about'):
-            await message.channel.send('https://github.com/JoshuaVarga/Umbrellabot')
+            await message.channel.send(
+                'https://github.com/JoshuaVarga/Umbrellabot'
+            )
 
         elif message.content.startswith('u!set'):
             if message.author.guild_permissions.administrator:
                 match args[1]:
                     case 'GUILD_ID':
                         if not debug:
-                            dotenv.set_key('.env', 'GUILD_ID', args[2], quote_mode='never')
+                            dotenv.set_key(
+                                '.env', args[1], args[2], quote_mode='never'
+                            )
                         else:
-                            environ['GUILD_ID'] = args[2]
+                            environ[args[1]] = args[2]
                     case 'OUTPUT_CHANNEL_ID':
                         if not debug:
-                            dotenv.set_key('.env', 'OUTPUT_CHANNEL_ID', args[2], quote_mode='never')
+                            dotenv.set_key(
+                                '.env', args[1], args[2], quote_mode='never'
+                            )
                         else:
-                            environ['OUTPUT_CHANNEL_ID'] = args[2]
+                            environ[args[1]] = args[2]
                     case 'PING_ROLE_ID':
                         if not debug:
-                            dotenv.set_key('.env', 'PING_ROLE_ID', args[2], quote_mode='never')
+                            dotenv.set_key(
+                                '.env', args[1], args[2], quote_mode='never'
+                            )
                         else:
-                            environ['PING_ROLE_ID'] = args[2]
+                            environ[args[1]] = args[2]
 
-                await message.channel.send('Successfully updated {} to {}!'.format(args[1], args[2]))
+                await message.channel.send(
+                    'Successfully updated {} to {}!'.format(args[1], args[2])
+                )
 
             else:
                 await message.channel.send('Insufficient privledges')
@@ -104,7 +114,8 @@ async def on_message(message):
             embed = discord.Embed(
                 type='rich',
                 title='Needs {} people to play {}!'.format(args[2], args[1]),
-                description='If you want to play react with: ✅\nOtherwise react with: ❌',
+                description='If you want to play react with: ✅\
+                            \nOtherwise react with: ❌',
                 color=int('0x%02X%02X%02X' % (rnd(), rnd(), rnd()), 16),
                 timestamp=message.created_at + timedelta(minutes=int(args[3]))
             )
@@ -117,9 +128,18 @@ async def on_message(message):
             pingRoleID = ''
 
             if debug:
-                pingRoleID = environ['PING_ROLE_ID']
+                channel = environ['DEBUG_CHANNEL_ID']
+            else:
+                channel = environ['OUTPUT_CHANNEL_ID']
 
-            reply = await client.get_channel(int(environ['OUTPUT_CHANNEL_ID'])).send('<@&{}>'.format(pingRoleID), embed=embed)
+            channel = int(channel)
+
+            reply = await client.get_channel(channel)\
+                                .send(
+                                    '<@&{}>'.format(environ['PING_ROLE_ID']),
+                                    embed=embed
+                                )
+
             await reply.add_reaction('✅')
             await reply.add_reaction('❌')
 
@@ -129,7 +149,10 @@ async def on_message(message):
 
             for member in guild.members:
                 if role in member.roles and debug:
-                    await member.send('You have been invited to play a game!\nClick here ➡️ {}'.format(jumpUrl))
+                    await member.send(
+                        'You have been invited to play a game!\
+                        \nClick here ➡️ {}'.format(jumpUrl)
+                    )
 
     except Exception as e:
         await message.channel.send(e)
