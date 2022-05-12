@@ -32,7 +32,9 @@ def main():
         if debug:
             environ['DISCORD_BOT_TOKEN'] = token
         else:
-            dotenv.set_key('.env', 'DISCORD_BOT_TOKEN', token, quote_mode='never')
+            dotenv.set_key(
+                '.env', 'DISCORD_BOT_TOKEN', token, quote_mode='never'
+            )
 
 
 def getCoverArt(query):
