@@ -3,7 +3,7 @@ name: Deploy
 on:
   push:
     branches:
-      - master
+      - main
 
 jobs:
   build:
@@ -16,7 +16,7 @@ jobs:
           heroku_app_name: "discord-umbrellabot" #Must be unique in Heroku
           heroku_email: "jpewpoopachew@gmail.com"
         env:
-          DISCORD_BOT_TOKEN: ${{secrets.DISCORD_BOT_TOKEN}}
-          GUILD_ID: ${{secrets.GUILD_ID}}
-          OUTPUT_CHANNEL_ID: ${{secrets.OUTPUT_CHANNEL_ID}}
-          PING_ROLE_ID: ${{secrets.PING_ROLE_ID}}
+          HD_DISCORD_BOT_TOKEN: ${{secrets.DISCORD_BOT_TOKEN}}
+          HD_GUILD_ID: ${{secrets.GUILD_ID}}
+          HD_OUTPUT_CHANNEL_ID: ${{secrets.OUTPUT_CHANNEL_ID}}
+          HD_PING_ROLE_ID: ${{secrets.PING_ROLE_ID}}
