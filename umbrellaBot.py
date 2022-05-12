@@ -71,21 +71,21 @@ async def on_message(message):
             if message.author.guild_permissions.administrator:
                 match args[1]:
                     case 'GUILD_ID':
-                        if not debug:
+                        if debug:
                             dotenv.set_key(
                                 '.env', args[1], args[2], quote_mode='never'
                             )
                         else:
                             environ[args[1]] = args[2]
                     case 'OUTPUT_CHANNEL_ID':
-                        if not debug:
+                        if debug:
                             dotenv.set_key(
                                 '.env', args[1], args[2], quote_mode='never'
                             )
                         else:
                             environ[args[1]] = args[2]
                     case 'PING_ROLE_ID':
-                        if not debug:
+                        if debug:
                             dotenv.set_key(
                                 '.env', args[1], args[2], quote_mode='never'
                             )
@@ -143,7 +143,7 @@ async def on_message(message):
             jumpUrl = reply.to_reference().jump_url
 
             for member in guild.members:
-                if role in member.roles and debug:
+                if role in member.roles and not debug:
                     await member.send(
                         'You have been invited to play a game!\
                         \nClick here ➡️ {}'.format(jumpUrl)
