@@ -20,3 +20,4 @@ jobs:
           HD_GUILD_ID: ${{secrets.GUILD_ID}}
           HD_OUTPUT_CHANNEL_ID: ${{secrets.OUTPUT_CHANNEL_ID}}
           HD_PING_ROLE_ID: ${{secrets.PING_ROLE_ID}}
+          HD_LOCATION_ID: ${{secrets.LOCATION_ID}}

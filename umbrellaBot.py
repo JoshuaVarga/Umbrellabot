@@ -1,4 +1,5 @@
 import asyncio
+from unicodedata import name
 import discord
 import dotenv
 import requests
@@ -8,9 +9,11 @@ from datetime import timedelta
 from os import environ
 from random import randint
 
-debug = False
-if 'ON_HEROKU' not in environ:
-    debug = True
+debug = True
+if 'UMBRELLABOT_DEV' not in environ:
+    debug = False
+else:
+    print('Debug mode Enabled')
 
 loop = asyncio.new_event_loop()
 client = discord.Client(intents=discord.Intents.all(), loop=loop)
@@ -19,6 +22,10 @@ client = discord.Client(intents=discord.Intents.all(), loop=loop)
 def main():
     if debug:
         open('.env', 'a+')
+        dotenv.set_key('.env', 'UMBRELLABOT_DEV', 'True', quote_mode='never')
+        dotenv.set_key(
+            '.env', 'DEBUG_CHANNEL_ID', '926170088426573895', quote_mode='never'
+        )
         dotenv.load_dotenv()
 
     print('Logging in...')
@@ -29,7 +36,7 @@ def main():
 
         token = input('Enter Discord Bot Token:\n')
 
-        if debug:
+        if not debug:
             environ['DISCORD_BOT_TOKEN'] = token
         else:
             dotenv.set_key(
@@ -41,7 +48,7 @@ def getCoverArt(query):
     url = 'https://www.google.com/search?q={0}&tbm=isch'.format(query)
     content = requests.get(url).content
     soup = BeautifulSoup(content, 'html.parser')
-    images = soup.findAll('img')
+    images = soup.find_all('img')
 
     return images[1].get('src')
 
@@ -106,21 +113,28 @@ async def on_message(message):
 
             def rnd(): return randint(0, 255)
 
+            guild = client.get_guild(int(environ['GUILD_ID']))
+
+            start_time = message.created_at + timedelta(minutes=int(args[3]))
+
+            scheduledEvent = await guild.create_scheduled_event(
+                name=args[1],
+                start_time=start_time,
+                location=guild.get_channel(int(environ['LOCATION_ID']))
+            )
+
             embed = discord.Embed(
                 type='rich',
                 title='Needs {} people to play {}!'.format(args[2], args[1]),
-                description='If you want to play react with: ✅\
-                            \nOtherwise react with: ❌',
+                description='Click the RSVP button below for more details!',
                 color=int('0x%02X%02X%02X' % (rnd(), rnd(), rnd()), 16),
-                timestamp=message.created_at + timedelta(minutes=int(args[3]))
+                timestamp=start_time
             )
 
             embed.set_author(name=message.author.display_name)
             embed.set_footer(text="We're playing")
             embed.set_image(url=getCoverArt(args[1]))
-            embed.set_thumbnail(url=message.author.avatar_url)
-
-            pingRoleID = ''
+            embed.set_thumbnail(url=str(message.author.avatar))
 
             if debug:
                 channel = environ['DEBUG_CHANNEL_ID']
@@ -128,16 +142,21 @@ async def on_message(message):
                 channel = environ['OUTPUT_CHANNEL_ID']
 
             channel = int(channel)
+            pingStr = ''
 
-            reply = await client.get_channel(channel)\
-                                .send(
-                                    '<@&{}>'.format(environ['PING_ROLE_ID']),
-                                    embed=embed
+            if not debug:
+                pingStr = '<@&{}>'.format(environ['PING_ROLE_ID'])
+
+            btnViewEvent = discord.ui.Button(
+                label='RSVP',
+                url=scheduledEvent.url,
+                style=discord.ButtonStyle.link
             )
 
-            await reply.add_reaction('✅')
-            await reply.add_reaction('❌')
+            view = discord.ui.View()
+            view.add_item(btnViewEvent)
 
+<<<<<<< Updated upstream
             guild = client.get_guild(int(environ['GUILD_ID']))
             role = guild.get_role(int(environ['PING_ROLE_ID']))
             jumpUrl = reply.to_reference().jump_url
@@ -148,6 +167,27 @@ async def on_message(message):
                         'You have been invited to play a game!\
                         \nClick here ➡️ {}'.format(jumpUrl)
                     )
+=======
+            reply = await client.get_channel(channel).send(
+                pingStr,
+                embed=embed,
+                view=view
+            )
+
+            if not debug:
+                role = guild.get_role(int(environ['PING_ROLE_ID']))
+                jumpUrl = reply.to_reference().jump_url
+
+                for member in guild.members:
+                    if role in member.roles and not debug:
+                        try:
+                            await member.send(
+                                'You have been invited to play a game!\
+                                \nClick here ➡️ {}'.format(jumpUrl)
+                            )
+                        except Exception as e:
+                            continue
+>>>>>>> Stashed changes
 
     except Exception as e:
         await message.channel.send(e)
