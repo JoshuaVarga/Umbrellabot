@@ -154,18 +154,6 @@ async def on_message(message):
             view = discord.ui.View()
             view.add_item(btnViewEvent)
 
-<<<<<<< Updated upstream
-            guild = client.get_guild(int(environ['GUILD_ID']))
-            role = guild.get_role(int(environ['PING_ROLE_ID']))
-            jumpUrl = reply.to_reference().jump_url
-
-            for member in guild.members:
-                if role in member.roles and debug:
-                    await member.send(
-                        'You have been invited to play a game!\
-                        \nClick here ➡️ {}'.format(jumpUrl)
-                    )
-=======
             reply = await client.get_channel(channel).send(
                 pingStr,
                 embed=embed,
@@ -185,7 +173,6 @@ async def on_message(message):
                             )
                         except Exception as e:
                             continue
->>>>>>> Stashed changes
 
     except Exception as e:
         await message.channel.send(e)
