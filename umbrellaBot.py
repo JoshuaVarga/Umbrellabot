@@ -39,7 +39,9 @@ def main():
         if not debug:
             environ['DISCORD_BOT_TOKEN'] = token
         else:
-            dotenv.set_key('.env', 'DISCORD_BOT_TOKEN', token, quote_mode='never')
+            dotenv.set_key(
+                '.env', 'DISCORD_BOT_TOKEN', token, quote_mode='never'
+            )
 
 
 def getCoverArt(query):
@@ -76,21 +78,21 @@ async def on_message(message):
             if message.author.guild_permissions.administrator:
                 match args[1]:
                     case 'GUILD_ID':
-                        if not debug:
+                        if debug:
                             dotenv.set_key(
                                 '.env', args[1], args[2], quote_mode='never'
                             )
                         else:
                             environ[args[1]] = args[2]
                     case 'OUTPUT_CHANNEL_ID':
-                        if not debug:
+                        if debug:
                             dotenv.set_key(
                                 '.env', args[1], args[2], quote_mode='never'
                             )
                         else:
                             environ[args[1]] = args[2]
                     case 'PING_ROLE_ID':
-                        if not debug:
+                        if debug:
                             dotenv.set_key(
                                 '.env', args[1], args[2], quote_mode='never'
                             )
@@ -153,6 +155,7 @@ async def on_message(message):
 
             view = discord.ui.View()
             view.add_item(btnViewEvent)
+
 
             reply = await client.get_channel(channel).send(
                 pingStr,
