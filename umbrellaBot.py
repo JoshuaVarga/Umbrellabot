@@ -1,50 +1,45 @@
-import asyncio
-from unicodedata import name
+# ----------------------------------IMPORTS-------------------------------------
 import discord
 import dotenv
 import requests
 
 from bs4 import BeautifulSoup
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone
 from os import environ
 from random import randint
 
+# ----------------------------------GLOBALS-------------------------------------
 debug = True
-if 'UMBRELLABOT_DEV' not in environ:
-    debug = False
-else:
-    print('Debug mode Enabled')
+bot = discord.Bot(intents=discord.Intents.all())
 
-loop = asyncio.new_event_loop()
-client = discord.Client(intents=discord.Intents.all(), loop=loop)
-
-
+# ---------------------------------FUNCTIONS------------------------------------
 def main():
-    if debug:
+    global debug
+
+    if 'UMBRELLABOT_DEV' not in environ:
+        debug = False
+    else:
+        print('Debug mode Enabled')
         open('.env', 'a+')
-        dotenv.set_key('.env', 'UMBRELLABOT_DEV', 'True', quote_mode='never')
-        dotenv.set_key(
-            '.env', 'DEBUG_CHANNEL_ID', '926170088426573895', quote_mode='never'
-        )
         dotenv.load_dotenv()
 
     print('Logging in...')
     try:
-        client.run(environ['DISCORD_BOT_TOKEN'], reconnect=True)
+        bot.run(environ['DISCORD_BOT_TOKEN'], reconnect=True)
     except Exception as e:
         print(e)
 
-        token = input('Enter Discord Bot Token:\n')
-
-        if not debug:
-            environ['DISCORD_BOT_TOKEN'] = token
-        else:
-            dotenv.set_key(
-                '.env', 'DISCORD_BOT_TOKEN', token, quote_mode='never'
-            )
-
-
 def getCoverArt(query):
+    '''
+    Returns a URL of an image relevant to the search query.
+
+        Parameters:
+            query (str): string to find an image for
+
+        Returns:
+            URL of image relevant to the query
+    '''
+
     url = 'https://www.google.com/search?q={0}&tbm=isch'.format(query)
     content = requests.get(url).content
     soup = BeautifulSoup(content, 'html.parser')
@@ -52,133 +47,123 @@ def getCoverArt(query):
 
     return images[1].get('src')
 
-
-@client.event
+# ----------------------------------EVENTS--------------------------------------
+@bot.event
 async def on_ready():
-    print('We have logged in as {0.user}'.format(client))
+    print('We have logged in as {0.user}'.format(bot))
+
+# ----------------------------------COMMANDS------------------------------------
+@bot.command(description='Schedule a time to play a game')
+async def game(
+    ctx: discord.ApplicationContext,
+    name: discord.Option(
+        str,
+        'Enter the name of the game you want to play',
+    ),
+    player_count: discord.Option(
+        int,
+        'Enter the amount of players needed to play',
+        min_value=2
+    ),
+    time: discord.Option(
+        int,
+        'Enter the amount of minutes from now until when you want to play',
+        min_value=1
+    )
+):
+    def rnd(): return randint(0, 255)   # Generates random colour value
+
+    guild = bot.get_guild(int(environ['GUILD_ID']))
+
+    # Create Discord Scheduled Event
+    start_time = datetime.now(timezone.utc) + timedelta(minutes=time)
+    scheduledEvent = await guild.create_scheduled_event(
+        name=name,
+        start_time=start_time,
+        location=guild.get_channel(int(environ['LOCATION_ID']))
+    )
+
+    # Create Discord Message
+    pingStr = ''
+
+    if not debug:
+        pingStr = '<@&{}>'.format(environ['PING_ROLE_ID'])
+
+    # Create Discord Embed
+    embed = discord.Embed(
+        type='rich',
+        title='Needs {} people to play {}!'.format(player_count, name),
+        description='Click the RSVP button below for more details!',
+        color=int('0x%02X%02X%02X' % (rnd(), rnd(), rnd()), 16),
+        timestamp=start_time
+    )
+
+    embed.set_author(name=ctx.interaction.user.display_name)
+    embed.set_footer(text="We're playing")
+    embed.set_image(url=getCoverArt(name))
+    embed.set_thumbnail(url=str(ctx.interaction.user.avatar))
+
+    # Create Discord Button and add it to a View
+    btnViewEvent = discord.ui.Button(
+        label='RSVP',
+        url=scheduledEvent.url,
+        style=discord.ButtonStyle.link
+    )
+
+    view = discord.ui.View()
+    view.add_item(btnViewEvent)
+
+    # Get output channel
+    channel = environ['OUTPUT_CHANNEL_ID']
+
+    if debug:
+        channel = environ['DEBUG_CHANNEL_ID']
+
+    # Combine everything together and send as a Discord message
+    reply = await bot.get_channel(int(channel)).send(
+        pingStr,
+        embed=embed,
+        view=view
+    )
+
+    # PM role members that they've been invited to play a game
+    if not debug:
+        role = guild.get_role(int(environ['PING_ROLE_ID']))
+        jumpUrl = reply.to_reference().jump_url
+
+        for member in guild.members:
+            if role in member.roles and not debug:
+                try:
+                    await member.send(
+                        'You have been invited to play a game!\
+                        \nClick here ➡️ {}'.format(jumpUrl)
+                    )
+                except Exception as e:
+                    continue
+
+    await ctx.respond('Game successfully scheduled!')
 
 
-@client.event
-async def on_message(message):
-    try:
-        args = message.content.split(' ')
+@bot.command(description='Set a key value to a Discord ID')
+@discord.default_permissions(administrator=True)
+async def set(
+    ctx: discord.ApplicationContext,
+    key: discord.Option(
+        str,
+        'Choose the key whose value you wish to change',
+        choices=['GUILD_ID', 'OUTPUT_CHANNEL_ID', 'PING_ROLE_ID']
+    ),
+    value: discord.Option(str, 'Enter the ID value')
+):
+    if debug:
+        dotenv.set_key(
+            '.env', key, value, quote_mode='never'
+        )
+    else:
+        environ[key] = value
 
-        if message.author == client.user:
-            return
+    await ctx.respond('Successfully set {} to {}!'.format(key, value))
 
-        if message.content.startswith('u!help'):
-            await message.channel.send('ToDo')
-
-        elif message.content.startswith('u!about'):
-            await message.channel.send(
-                'https://github.com/JoshuaVarga/Umbrellabot'
-            )
-
-        elif message.content.startswith('u!set'):
-            if message.author.guild_permissions.administrator:
-                match args[1]:
-                    case 'GUILD_ID':
-                        if debug:
-                            dotenv.set_key(
-                                '.env', args[1], args[2], quote_mode='never'
-                            )
-                        else:
-                            environ[args[1]] = args[2]
-                    case 'OUTPUT_CHANNEL_ID':
-                        if debug:
-                            dotenv.set_key(
-                                '.env', args[1], args[2], quote_mode='never'
-                            )
-                        else:
-                            environ[args[1]] = args[2]
-                    case 'PING_ROLE_ID':
-                        if debug:
-                            dotenv.set_key(
-                                '.env', args[1], args[2], quote_mode='never'
-                            )
-                        else:
-                            environ[args[1]] = args[2]
-
-                await message.channel.send(
-                    'Successfully updated {} to {}!'.format(args[1], args[2])
-                )
-
-            else:
-                await message.channel.send('Insufficient privledges')
-
-        elif message.content.startswith('u!game'):
-
-            if int(args[2]) < 2 or int(args[2]) > float('inf'):
-                raise Exception('Invalid range')
-
-            def rnd(): return randint(0, 255)
-
-            guild = client.get_guild(int(environ['GUILD_ID']))
-
-            start_time = message.created_at + timedelta(minutes=int(args[3]))
-
-            scheduledEvent = await guild.create_scheduled_event(
-                name=args[1],
-                start_time=start_time,
-                location=guild.get_channel(int(environ['LOCATION_ID']))
-            )
-
-            embed = discord.Embed(
-                type='rich',
-                title='Needs {} people to play {}!'.format(args[2], args[1]),
-                description='Click the RSVP button below for more details!',
-                color=int('0x%02X%02X%02X' % (rnd(), rnd(), rnd()), 16),
-                timestamp=start_time
-            )
-
-            embed.set_author(name=message.author.display_name)
-            embed.set_footer(text="We're playing")
-            embed.set_image(url=getCoverArt(args[1]))
-            embed.set_thumbnail(url=str(message.author.avatar))
-
-            if debug:
-                channel = environ['DEBUG_CHANNEL_ID']
-            else:
-                channel = environ['OUTPUT_CHANNEL_ID']
-
-            channel = int(channel)
-            pingStr = ''
-
-            if not debug:
-                pingStr = '<@&{}>'.format(environ['PING_ROLE_ID'])
-
-            btnViewEvent = discord.ui.Button(
-                label='RSVP',
-                url=scheduledEvent.url,
-                style=discord.ButtonStyle.link
-            )
-
-            view = discord.ui.View()
-            view.add_item(btnViewEvent)
-
-
-            reply = await client.get_channel(channel).send(
-                pingStr,
-                embed=embed,
-                view=view
-            )
-
-            if not debug:
-                role = guild.get_role(int(environ['PING_ROLE_ID']))
-                jumpUrl = reply.to_reference().jump_url
-
-                for member in guild.members:
-                    if role in member.roles and not debug:
-                        try:
-                            await member.send(
-                                'You have been invited to play a game!\
-                                \nClick here ➡️ {}'.format(jumpUrl)
-                            )
-                        except Exception as e:
-                            continue
-
-    except Exception as e:
-        await message.channel.send(e)
-
+# -----------------------------------MAIN---------------------------------------
 if __name__ == '__main__':
     main()
