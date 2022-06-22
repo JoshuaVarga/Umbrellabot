@@ -5,16 +5,12 @@ import requests
 
 from bs4 import BeautifulSoup
 from datetime import datetime, timedelta, timezone
-from discord.ext import commands
 from os import environ
 from random import randint
 
 # ----------------------------------GLOBALS-------------------------------------
 debug = True
-bot = commands.Bot(
-    command_prefix='u!',
-    intents=discord.Intents.all()
-)
+bot = discord.Bot(command_prefix='u!', intents=discord.Intents.all())
 
 # ---------------------------------FUNCTIONS------------------------------------
 def main():
