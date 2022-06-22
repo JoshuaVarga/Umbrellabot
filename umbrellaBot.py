@@ -10,7 +10,7 @@ from random import randint
 
 # ----------------------------------GLOBALS-------------------------------------
 debug = True
-bot = discord.Bot(command_prefix='u!', intents=discord.Intents.all())
+bot = discord.Bot(intents=discord.Intents.all())
 
 # ---------------------------------FUNCTIONS------------------------------------
 def main():
