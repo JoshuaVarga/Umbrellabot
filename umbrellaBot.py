@@ -5,12 +5,16 @@ import requests
 
 from bs4 import BeautifulSoup
 from datetime import datetime, timedelta, timezone
+from discord.ext import commands
 from os import environ
 from random import randint
 
 # ----------------------------------GLOBALS-------------------------------------
 debug = True
-bot = discord.Bot(intents=discord.Intents.all())
+bot = commands.Bot(
+    command_prefix='u!',
+    intents=discord.Intents.all()
+)
 
 # ---------------------------------FUNCTIONS------------------------------------
 def main():
@@ -22,6 +26,8 @@ def main():
         print('Debug mode Enabled')
         open('.env', 'a+')
         dotenv.load_dotenv()
+
+    bot.activity = discord.Activity(name='/game', type=3)
 
     print('Logging in...')
     try:
