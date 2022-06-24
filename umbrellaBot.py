@@ -143,7 +143,7 @@ async def game(
                 except Exception as e:
                     continue
 
-    await ctx.respond('Game successfully scheduled!')
+    await ctx.send('Game successfully scheduled!')
 
 
 @bot.command(description='Set a key value to a Discord ID')
