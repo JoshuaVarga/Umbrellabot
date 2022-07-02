@@ -1,4 +1,6 @@
 # ----------------------------------IMPORTS-------------------------------------
+from email import message
+from pydoc import describe
 import discord
 import dotenv
 import requests
@@ -13,6 +15,8 @@ debug = True
 bot = discord.Bot(intents=discord.Intents.all())
 
 # ---------------------------------FUNCTIONS------------------------------------
+
+
 def main():
     global debug
 
@@ -30,6 +34,7 @@ def main():
         bot.run(environ['DISCORD_BOT_TOKEN'], reconnect=True)
     except Exception as e:
         print(e)
+
 
 def getCoverArt(query):
     '''
@@ -50,11 +55,49 @@ def getCoverArt(query):
     return images[1].get('src')
 
 # ----------------------------------EVENTS--------------------------------------
+
+
 @bot.event
 async def on_ready():
     print('We have logged in as {0.user}'.format(bot))
 
-# ----------------------------------COMMANDS------------------------------------
+# # ----------------------------------COMMANDS------------------------------------
+# @bot.command(description='Opens role selection')
+# @discord.default_permissions(administrator=True)
+# async def initializeRoles(
+#     ctx: discord.ApplicationContext
+# ):
+#     roleButton = discord.ui.Button(
+#         custom_id='btnRoles',
+#         label='Roles',
+#         style=discord.ButtonStyle.blurple
+#     )
+
+#     roleView = discord.ui.View(timeout=None)
+#     roleView.add_item(roleButton)
+
+#     async def roleCallback(interaction):
+#         select = discord.ui.Select(
+#             custom_id='roleSelectMenu',
+#             placeholder='Select a role',
+#             options=[
+#                 discord.SelectOption(label='TRUE GAMERS', emoji='👾')
+#             ]
+#         )
+
+#         roleView = discord.ui.View()
+#         roleView.add_item(roleButton)
+
+#         async def selectCallback(interaction):
+#             match select.values:
+#                 case 'TRUE GAMERS':
+
+
+#     roleButton.callback = roleCallback
+
+#     await ctx.interaction.response.send_message(view=roleView, ephemeral=True)
+
+
 @bot.command(description='Schedule a time to play a game')
 async def game(
     ctx: discord.ApplicationContext,
@@ -112,38 +155,74 @@ async def game(
         style=discord.ButtonStyle.link
     )
 
-    view = discord.ui.View()
-    view.add_item(btnViewEvent)
+    btnCreateThread = discord.ui.Button(
+        custom_id='btnCreateThread',
+        style=discord.ButtonStyle.secondary,
+        label='Create Thread',
+        emoji='#️⃣'
+    )
 
     # Get output channel
-    channel = environ['OUTPUT_CHANNEL_ID']
-
     if debug:
-        channel = environ['DEBUG_CHANNEL_ID']
+        channel_id = environ['DEBUG_CHANNEL_ID']
+    else:
+        channel_id = environ['OUTPUT_CHANNEL_ID']
+
+    channel = bot.get_channel(int(channel_id))
+
+    view = discord.ui.View()
+    view.add_item(btnViewEvent)
+    view.add_item(btnCreateThread)
+
+    threads = channel.threads
+
+    processedName = name.lower()
+    processedName = processedName.replace(' ', '')
+
+    for thread in threads:
+        threadName = thread.name.lower()
+        threadName = threadName.replace(' ', '')
+
+        if threadName == processedName:
+            channel = thread
+            view.remove_item(btnCreateThread)
 
     # Combine everything together and send as a Discord message
-    reply = await bot.get_channel(int(channel)).send(
+    reply = await channel.send(
         pingStr,
         embed=embed,
         view=view
     )
 
+    async def btnCallback(interaction):
+        btnCreateThread.disabled = True
+        await reply.edit(view=view)
+        msg = await channel.send('{} Thread'.format(name))
+        await msg.create_thread(name=name)
+
+        await interaction.response.defer()
+
+    btnCreateThread.callback = btnCallback
+
     # PM role members that they've been invited to play a game
-    if not debug:
-        role = guild.get_role(int(environ['PING_ROLE_ID']))
-        jumpUrl = reply.to_reference().jump_url
+    # if not debug:
+    #     role = guild.get_role(int(environ['PING_ROLE_ID']))
+    #     jumpUrl = reply.to_reference().jump_url
 
-        for member in guild.members:
-            if role in member.roles and not debug:
-                try:
-                    await member.send(
-                        'You have been invited to play a game!\
-                        \nClick here ➡️ {}'.format(jumpUrl)
-                    )
-                except Exception as e:
-                    continue
+    #     for member in guild.members:
+    #         if role in member.roles and not debug:
+    #             try:
+    #                 await member.send(
+    #                     'You have been invited to play a game!\
+    #                     \nClick here ➡️ {}'.format(jumpUrl)
+    #                 )
+    #             except Exception as e:
+    #                 continue
 
-    await ctx.send('Game successfully scheduled!')
+    await ctx.interaction.response.send_message(
+        content='Event successfully scheduled!',
+        ephemeral=True
+    )
 
 
 @bot.command(description='Set a key value to a Discord ID')
