@@ -1,5 +1,5 @@
+import requests
 from bs4 import BeautifulSoup
-from requests import get
 
 def cover_art(query: str) -> str:
     '''
@@ -13,7 +13,7 @@ def cover_art(query: str) -> str:
     '''
 
     url = 'https://www.google.com/search?q={0}&tbm=isch'.format(query)
-    content = get(url).content
+    content = requests.get(url).content
     soup = BeautifulSoup(content, 'html.parser')
     images = soup.find_all('img')
 
