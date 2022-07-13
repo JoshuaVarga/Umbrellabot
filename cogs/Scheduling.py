@@ -84,7 +84,7 @@ class Scheduling(discord.Cog):
         view.add_item(btnViewEvent)
         view.add_item(btnCreateThread)
 
-        thread = await find_thread(name, channel)
+        thread = find_thread(name, channel)
 
         if thread != None:
             if thread.archived:
