@@ -72,11 +72,11 @@ class Scheduling(discord.Cog):
             emoji='#️⃣'
         )
 
+        channel_id = self.bot.output_channel_id
+
         # Get output channel
         if self.bot.debug:
             channel_id = ctx.interaction.channel_id
-        else:
-            self.bot.output_channel_id
 
         channel = self.bot.get_channel(int(channel_id))
 
