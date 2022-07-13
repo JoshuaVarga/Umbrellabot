@@ -86,9 +86,13 @@ class Scheduling(discord.Cog):
 
         thread = await find_thread(name, channel)
 
-        if thread:
+        if thread != None:
+            if thread.archived:
+                await thread.unarchive()
             channel = thread
             view.remove_item(btnCreateThread)
+
+        print(channel.name)
 
         # Combine everything together and send as a Discord message
         reply = await channel.send(

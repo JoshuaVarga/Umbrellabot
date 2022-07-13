@@ -5,16 +5,18 @@ async def find_thread(name: str, channel: TextChannel) -> Thread:
 
     archived_thread = channel.archived_threads()
 
+    foundThread = None
+
     async for thread in archived_thread:
         threadName = thread.name.lower().replace(' ', '')
 
         if threadName == nameFormatted:
-            return thread
+            foundThread = thread
 
     for thread in channel.threads:
         threadName = thread.name.lower().replace(' ', '')
 
         if threadName == nameFormatted:
-            return thread
+            foundThread = thread
     
-    return None
+    return foundThread
