@@ -42,7 +42,7 @@ class Scheduling(discord.Cog):
         pingStr = ''
 
         if not self.bot.debug:
-            pingStr = f'{guild.default_role.mention}'
+            pingStr = f'{guild.default_role}'
 
         # Create Discord Embed
         embed = discord.Embed(
