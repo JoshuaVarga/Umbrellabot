@@ -80,7 +80,7 @@ class Scheduling(discord.Cog):
 
         channel = self.bot.get_channel(int(id))
 
-        view = discord.ui.View()
+        view = discord.ui.View(timeout=None)
         view.add_item(btnViewEvent)
         view.add_item(btnCreateThread)
 
